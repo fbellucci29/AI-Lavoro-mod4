@@ -5,7 +5,7 @@
 <title>M4 — Cerca le parole</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{width:800px;height:550px;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;
+body{min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;
   background:linear-gradient(135deg,#0a1628 0%,#12263f 60%,#0a1a2e 100%);color:#fff;user-select:none}
 #header{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;
   background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.12)}
@@ -63,6 +63,7 @@ body{position:relative}
 </style>
 </head>
 <body>
+<div style="width:800px;height:550px;overflow:hidden;position:relative;flex-shrink:0">
 <div id="startOv">
   <div class="start-icon">🔡</div>
   <h2>Cerca le parole chiave</h2>
@@ -284,5 +285,6 @@ function restart(){
 function showStart(){document.getElementById('startOv').style.display='flex';}
 function startGame(){document.getElementById('startOv').style.display='none';restart();}
 </script>
+</div>
 </body>
 </html>
