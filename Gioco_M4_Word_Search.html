@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>M4 — Cerca le parole</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:800px;height:550px;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;
+  background:linear-gradient(135deg,#0a1628 0%,#12263f 60%,#0a1a2e 100%);color:#fff;user-select:none}
+#header{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  background:rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.12)}
+#header h1{font-size:14px;font-weight:700}
+#found-count{background:rgba(255,255,255,.14);padding:4px 13px;border-radius:16px;font-size:12px;font-weight:700}
+#body{display:flex;height:504px}
+#grid-area{padding:12px 10px 10px 12px;flex-shrink:0}
+#grid{display:grid;grid-template-columns:repeat(15,31px);grid-template-rows:repeat(15,31px);gap:1px}
+.cell{width:31px;height:31px;display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:600;cursor:pointer;border-radius:4px;
+  background:rgba(255,255,255,.07);transition:background .1s;letter-spacing:0}
+.cell:hover{background:rgba(255,255,255,.16)}
+.cell.selecting{background:rgba(99,179,237,.4)!important}
+.cell.found-0{background:rgba(167,139,250,.35)!important;color:#e9d5ff!important}
+.cell.found-1{background:rgba(52,211,153,.35)!important;color:#d1fae5!important}
+.cell.found-2{background:rgba(251,146,60,.35)!important;color:#ffedd5!important}
+.cell.found-3{background:rgba(96,165,250,.35)!important;color:#dbeafe!important}
+.cell.found-4{background:rgba(248,113,113,.35)!important;color:#fee2e2!important}
+.cell.found-5{background:rgba(250,204,21,.35)!important;color:#fef9c3!important}
+.cell.found-6{background:rgba(167,243,208,.35)!important;color:#d1fae5!important}
+.cell.found-7{background:rgba(196,181,253,.35)!important;color:#ede9fe!important}
+.cell.found-8{background:rgba(253,186,116,.35)!important;color:#ffedd5!important}
+.cell.found-9{background:rgba(134,239,172,.35)!important;color:#dcfce7!important}
+.cell.found-10{background:rgba(147,197,253,.35)!important;color:#dbeafe!important}
+.cell.found-11{background:rgba(252,165,165,.35)!important;color:#fee2e2!important}
+#side{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+#side h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin-bottom:2px}
+.word-item{padding:7px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:7px;font-size:12px;font-weight:600;transition:all .3s;display:flex;justify-content:space-between;align-items:center}
+.word-item.found{text-decoration:line-through;opacity:.55;background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3)}
+.word-def{font-size:10px;opacity:.5;font-weight:400;margin-top:1px}
+#flash{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(52,211,153,.95);color:#000;padding:8px 18px;border-radius:20px;
+  font-size:12px;font-weight:700;display:none;z-index:200;white-space:nowrap}
+#ov{display:none;position:absolute;inset:0;z-index:100;background:rgba(0,0,0,.9);
+  align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px}
+#ov.show{display:flex}
+#ov .em{font-size:44px;margin-bottom:10px}
+#ov h2{font-size:22px;margin-bottom:8px}
+#ov p{font-size:13px;opacity:.8;max-width:480px;line-height:1.6;margin-bottom:18px}
+.btn{background:#7c3aed;color:#fff;border:none;padding:11px 26px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600}
+.btn:hover{background:#6d28d9}
+body{position:relative}
+#startOv{position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px}
+#startOv h2{font-size:20px;font-weight:700;color:#fff;margin-bottom:10px}
+#startOv p{font-size:13px;color:rgba(255,255,255,.8);max-width:500px;line-height:1.6;margin-bottom:20px}
+.start-icon{font-size:44px;margin-bottom:12px}
+.start-btn{padding:11px 32px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s}
+.start-btn:hover{transform:translateY(-2px)}
+.btn-rigioca{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-rigioca:hover{background:rgba(255,255,255,.25)}
+.btn-corso{background:#fff;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:background .2s}
+.btn-corso:hover{background:#f0f0f0}
+.hdr-btns{display:flex;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+<div id="startOv">
+  <div class="start-icon">🔡</div>
+  <h2>Cerca le parole chiave</h2>
+  <p>Seleziona le parole nascoste nella griglia trascinando il mouse in orizzontale o verticale. 12 termini chiave su privacy e AI da trovare.</p>
+  <button class="start-btn" style="background:#7c3aed;color:#fff" onclick="startGame()">▶ Inizia</button>
+</div>
+<div id="header">
+  <h1>🔡 M4 — Cerca le parole chiave sulla privacy e AI</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div id="found-count">Trovate: <span id="fc">0</span> / 12</div>
+    <div class="hdr-btns">
+      <button class="btn-rigioca" onclick="showStart()">🔄 Rigioca</button>
+      <button class="btn-corso" style="color:#0a1628" onclick="window.close()">Torna al corso</button>
+    </div>
+  </div>
+</div>
+<div id="body">
+  <div id="grid-area"><div id="grid"></div></div>
+  <div id="side">
+    <h3>Parole da trovare</h3>
+    <div id="word-list"></div>
+  </div>
+</div>
+<div id="flash"></div>
+<div id="ov">
+  <div class="em">🏆</div>
+  <h2>Trovate tutte le 12 parole!</h2>
+  <p>Hai individuato tutti i termini chiave: dal GDPR al DEPLOYER, dalla RISERVATEZZA al PROMPT engineering. Conoscere queste parole è il primo passo per usare l'AI in modo consapevole.</p>
+  <div style="display:flex;gap:10px;justify-content:center">
+    <button class="btn" onclick="showStart()">🔄 Rigioca</button>
+    <button class="btn" style="background:#78909c" onclick="window.close()">Torna al corso</button>
+  </div>
+</div>
+
+<script>
+const SIZE=15;
+const WORDS=[
+  {w:'RISERVATEZZA', def:'principio GDPR'},
+  {w:'ANONIMIZZA', def:'rimuovi dati identificativi'},
+  {w:'SENSIBILI', def:'dati speciali (art. 9 GDPR)'},
+  {w:'TRAINING', def:'addestramento del modello'},
+  {w:'DEPLOYER', def:'chi mette in uso l\'AI'},
+  {w:'POLICY', def:'regola aziendale'},
+  {w:'GDPR', def:'reg. UE privacy'},
+  {w:'DPO', def:'responsabile protezione dati'},
+  {w:'LEAKAGE', def:'fuga di dati'},
+  {w:'VAGHEZZA', def:'istruzione imprecisa'},
+  {w:'PROMPT', def:'istruzione all\'AI'},
+  {w:'CONSENSO', def:'base giuridica GDPR'},
+];
+
+// placements: {wi (word index), r, c, dr, dc}
+const placements=[
+  {wi:0, r:0, c:1, dr:0, dc:1},  // RISERVATEZZA horizontal r0 c1..12
+  {wi:1, r:2, c:0, dr:0, dc:1},  // ANONIMIZZA horizontal r2 c0..9
+  {wi:2, r:4, c:3, dr:0, dc:1},  // SENSIBILI horizontal r4 c3..11
+  {wi:3, r:6, c:1, dr:0, dc:1},  // TRAINING horizontal r6 c1..8
+  {wi:4, r:8, c:5, dr:0, dc:1},  // DEPLOYER horizontal r8 c5..12
+  {wi:5, r:10,c:7, dr:0, dc:1},  // POLICY horizontal r10 c7..12
+  {wi:6, r:12,c:10,dr:0, dc:1},  // GDPR horizontal r12 c10..13
+  {wi:7, r:14,c:0, dr:0, dc:1},  // DPO horizontal r14 c0..2
+  {wi:8, r:0, c:0, dr:1, dc:0},  // LEAKAGE vertical c0 r0..6
+  {wi:9, r:0, c:14,dr:1, dc:0},  // VAGHEZZA vertical c14 r0..7
+  {wi:10,r:3, c:13,dr:1, dc:0},  // PROMPT vertical c13 r3..8
+  {wi:11,r:7, c:2, dr:1, dc:0},  // CONSENSO vertical c2 r7..14
+];
+
+// Build grid
+let grid=Array.from({length:SIZE},()=>Array(SIZE).fill(''));
+let cellWord=Array.from({length:SIZE},()=>Array(SIZE).fill(-1)); // which word idx
+// Multiple words can overlap — we allow the last placed wins for display, but we track per cell which words occupy it
+
+// Actually we need to track which placement(s) are at each cell
+let cellPlacements=Array.from({length:SIZE},()=>Array(SIZE).fill(null).map(()=>[]));
+
+placements.forEach((p,pi)=>{
+  const word=WORDS[p.wi].w;
+  for(let i=0;i<word.length;i++){
+    const r=p.r+p.dr*i, c=p.c+p.dc*i;
+    grid[r][c]=word[i];
+    cellPlacements[r][c].push(pi);
+  }
+});
+
+// Fill empty cells
+const ALPHA='BCDFGHJKLMNPQRSTVWXYZ'; // avoid accidentally spelling extra words
+for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+  if(!grid[r][c]) grid[r][c]=ALPHA[Math.floor(Math.random()*ALPHA.length)];
+}
+
+let foundSet=new Set();
+let selStart=null, selecting=false, selCells=[];
+let foundCount=0;
+
+// Render grid
+const gridEl=document.getElementById('grid');
+for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+  const cell=document.createElement('div');
+  cell.className='cell';
+  cell.id=`c${r}_${c}`;
+  cell.textContent=grid[r][c];
+  cell.dataset.r=r; cell.dataset.c=c;
+  cell.addEventListener('mousedown',startSel);
+  cell.addEventListener('mouseenter',extendSel);
+  cell.addEventListener('mouseup',endSel);
+  gridEl.appendChild(cell);
+}
+
+document.addEventListener('mouseup',()=>{if(selecting){selecting=false;clearSel();}});
+
+// Render word list
+const wlEl=document.getElementById('word-list');
+WORDS.forEach((wd,i)=>{
+  const d=document.createElement('div');
+  d.className='word-item';
+  d.id='wi'+i;
+  d.innerHTML=`<span>${wd.w}</span><span class="word-def">${wd.def}</span>`;
+  wlEl.appendChild(d);
+});
+
+function startSel(e){
+  e.preventDefault();
+  selecting=true;
+  selStart={r:+this.dataset.r,c:+this.dataset.c};
+  selCells=[{r:selStart.r,c:selStart.c}];
+  highlightSel();
+}
+
+function extendSel(e){
+  if(!selecting||!selStart)return;
+  const r=+this.dataset.r, c=+this.dataset.c;
+  selCells=getCellsInLine(selStart.r,selStart.c,r,c);
+  highlightSel();
+}
+
+function endSel(e){
+  if(!selecting)return;
+  selecting=false;
+  checkSelection();
+}
+
+function getCellsInLine(r1,c1,r2,c2){
+  const cells=[];
+  const dr=r2-r1, dc=c2-c1;
+  // Only allow H or V
+  if(dr!==0&&dc!==0)return[{r:r1,c:c1}]; // diagonal not supported
+  const steps=Math.max(Math.abs(dr),Math.abs(dc));
+  const sr=dr===0?0:(dr>0?1:-1);
+  const sc=dc===0?0:(dc>0?1:-1);
+  for(let i=0;i<=steps;i++) cells.push({r:r1+sr*i,c:c1+sc*i});
+  return cells;
+}
+
+function highlightSel(){
+  // Clear previous
+  document.querySelectorAll('.cell.selecting').forEach(el=>el.classList.remove('selecting'));
+  selCells.forEach(({r,c})=>{
+    const el=document.getElementById(`c${r}_${c}`);
+    if(el&&!isCellFound(r,c)) el.classList.add('selecting');
+  });
+}
+
+function isCellFound(r,c){
+  return document.getElementById(`c${r}_${c}`).className.includes('found-');
+}
+
+function checkSelection(){
+  document.querySelectorAll('.cell.selecting').forEach(el=>el.classList.remove('selecting'));
+  if(selCells.length<2)return;
+  const selected=selCells.map(({r,c})=>grid[r][c]).join('');
+  const selectedRev=selected.split('').reverse().join('');
+
+  placements.forEach((p,pi)=>{
+    if(foundSet.has(pi))return;
+    const word=WORDS[p.wi].w;
+    if(selected===word||selectedRev===word){
+      foundSet.add(pi);
+      foundCount++;
+      markWord(pi);
+      document.getElementById('fc').textContent=foundCount;
+      document.getElementById('wi'+p.wi).classList.add('found');
+      showFlash('✓ '+word+' trovata!');
+      if(foundCount===12) setTimeout(()=>document.getElementById('ov').classList.add('show'),600);
+    }
+  });
+  selCells=[];
+}
+
+const COLORS=['found-0','found-1','found-2','found-3','found-4','found-5',
+  'found-6','found-7','found-8','found-9','found-10','found-11'];
+
+function markWord(pi){
+  const p=placements[pi];
+  const word=WORDS[p.wi].w;
+  const colorClass=COLORS[pi%COLORS.length];
+  for(let i=0;i<word.length;i++){
+    const r=p.r+p.dr*i, c=p.c+p.dc*i;
+    const el=document.getElementById(`c${r}_${c}`);
+    // Remove any existing found class first
+    el.className='cell '+colorClass;
+  }
+}
+
+const flash=document.getElementById('flash');
+function showFlash(m){
+  flash.textContent=m;flash.style.display='block';
+  clearTimeout(flash._t);flash._t=setTimeout(()=>flash.style.display='none',1600);
+}
+
+function restart(){
+  foundSet.clear(); foundCount=0;
+  document.getElementById('fc').textContent='0';
+  document.getElementById('ov').classList.remove('show');
+  document.querySelectorAll('.cell').forEach(el=>{
+    el.className='cell';
+  });
+  document.querySelectorAll('.word-item').forEach(el=>el.classList.remove('found'));
+}
+function showStart(){document.getElementById('startOv').style.display='flex';}
+function startGame(){document.getElementById('startOv').style.display='none';restart();}
+</script>
+</body>
+</html>
